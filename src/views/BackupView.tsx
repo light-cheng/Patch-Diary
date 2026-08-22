@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { exportAll, importEntries } from '../api'
+import { downloadJson } from '../lib/browser'
 
 export default function BackupView() {
   const [message, setMessage] = useState('')
@@ -12,14 +13,8 @@ export default function BackupView() {
     setMessage('')
     try {
       const data = await exportAll()
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
       const today = new Date().toISOString().slice(0, 10)
-      a.download = `life-diary-backup-${today}.json`
-      a.click()
-      URL.revokeObjectURL(url)
+      downloadJson(data, `life-diary-backup-${today}.json`)
       setMessage(`已导出 ${data.entries.length} 天的记录`)
     } catch (e) {
       setMessage(e instanceof Error ? e.message : '导出失败')

@@ -71,6 +71,28 @@ function clampInt(v: unknown, min: number, max: number): number {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
+function baseVersionForDateStr(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const yy = String(y % 100).padStart(2, '0')
+  return `v${yy}.${m}.${d}`
+}
+
+function parseVersionSuffixForWorker(version: string, base: string): number | null {
+  if (version === base) return 0
+  if (!version.startsWith(`${base}.`)) return null
+  const suffix = version.slice(base.length + 1)
+  if (!/^\d+$/.test(suffix)) return null
+  return Number(suffix)
+}
+
+function nextVersionForDate(existingVersion: string | null | undefined, dateStr: string): string {
+  const base = baseVersionForDateStr(dateStr)
+  if (!existingVersion) return base
+  const suffix = parseVersionSuffixForWorker(existingVersion, base)
+  if (suffix === null) return base
+  return suffix === 0 ? `${base}.1` : `${base}.${suffix + 1}`
+}
+
 async function getSettingsRows(env: Env): Promise<Record<string, string>> {
   try {
     const { results } = await env.DB.prepare('SELECT key, value FROM settings').all<{
@@ -353,8 +375,32 @@ export default {
       }
       const entry = normalizeEntry(body)
       if (!entry) return json({ ok: false, error: 'invalid entry' }, 400)
+      // Server-side authority: if date already exists, derive expected version from DB
+      // to avoid client refresh losing suffix. If client version mismatches, correct it.
+      const existing = await env.DB.prepare('SELECT version FROM entries WHERE date = ?1')
+        .bind(entry.date)
+        .first<{ version: string }>()
+      if (existing?.version) {
+        const expected = nextVersionForDate(existing.version, entry.date)
+        // If client sent base or stale version, upgrade to expected; if client already equals expected, keep it.
+        // Also handle case where client sent same as existing (no suffix bump yet) -> bump.
+        if (entry.version !== expected && entry.version !== existing.version) {
+          // client version diverged; still enforce monotonic bump
+          // keep client if it is correctly incremented beyond existing, else correct
+          const clientSuffix = parseVersionSuffixForWorker(entry.version, baseVersionForDateStr(entry.date))
+          const existingSuffix = parseVersionSuffixForWorker(existing.version, baseVersionForDateStr(entry.date))
+          if (clientSuffix === null || existingSuffix === null || clientSuffix <= existingSuffix) {
+            entry.version = expected
+          }
+        } else if (entry.version === existing.version) {
+          entry.version = expected
+        }
+      } else {
+        // first save for this date: force canonical base version
+        entry.version = baseVersionForDateStr(entry.date)
+      }
       await upsertEntryStmt(env, entry, new Date().toISOString()).run()
-      return json({ ok: true })
+      return json({ ok: true, version: entry.version })
     }
 
     if (path === '/api/entries' && request.method === 'GET') {

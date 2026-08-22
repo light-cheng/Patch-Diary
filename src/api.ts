@@ -65,12 +65,16 @@ function post<T>(url: string, data: unknown): Promise<T> {
   })
 }
 
+export interface StyleLevels {
+  sarcasm: number
+  game: number
+}
+
 export async function generatePatchNotes(
   events: string,
-  sarcasmLv: number,
-  gameLv: number,
+  levels: StyleLevels,
 ): Promise<PatchData> {
-  const body = await post<{ data?: unknown }>('/api/generate', { events, sarcasmLv, gameLv })
+  const body = await post<{ data?: unknown }>('/api/generate', { events, sarcasmLv: levels.sarcasm, gameLv: levels.game })
   const data = parsePatchData(body.data)
   if (!data) throw new ApiError('生成结果解析失败，点「再试一次」')
   return data

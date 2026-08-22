@@ -5,10 +5,10 @@ import ShinyText from '../components/reactbits/ShinyText/ShinyText'
 import SplitText from '../components/reactbits/SplitText/SplitText'
 import SpotlightCard from '../components/reactbits/SpotlightCard/SpotlightCard'
 import PatchCard from '../PatchCard'
-import { ApiError, generatePatchNotes, saveEntry } from '../api'
-import { baseVersion, type PatchData } from '../schema'
+import { ApiError, fetchEntry, generatePatchNotes, saveEntry } from '../api'
+import { type PatchData } from '../schema'
 import { patchToText } from '../lib/text'
-import { todayDateStr, todayLocalDate } from '../lib/dates'
+import { baseVersion, nextVersion, todayDateStr, todayLocalDate } from '../lib/dates'
 import { copyTextToClipboard, saveCardAsImage } from '../lib/browser'
 
 const DRAFT_KEY = 'lpn_draft'
@@ -34,7 +34,6 @@ export default function TodayView() {
   const [copied, setCopied] = useState(false)
   const [saveTip, setSaveTip] = useState('')
 
-  const genCount = useRef(0)
   const cardRef = useRef<HTMLDivElement>(null)
   const eventsRef = useRef(events)
   eventsRef.current = events
@@ -42,6 +41,19 @@ export default function TodayView() {
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, events)
   }, [events])
+
+  // Hydrate version from already-saved entry so refresh doesn't reset suffix
+  useEffect(() => {
+    let cancelled = false
+    fetchEntry(todayLocalDate())
+      .then((e) => {
+        if (!cancelled && e?.version) setVersion(e.version)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (phase !== 'loading') return
@@ -63,10 +75,11 @@ export default function TodayView() {
       setSaveTip('')
       setPhase('loading')
       try {
-        const d = await generatePatchNotes(text, sarLv, gmLv)
-        const v =
-          genCount.current === 0 ? baseVersion() : `${baseVersion()}.${genCount.current}`
-        genCount.current += 1
+        const [d, existing] = await Promise.all([
+          generatePatchNotes(text, { sarcasm: sarLv, game: gmLv }),
+          fetchEntry(todayLocalDate()).catch(() => null),
+        ])
+        const v = nextVersion(existing?.version, new Date())
         setData(d)
         setVersion(v)
         setPhase('card')
@@ -112,7 +125,6 @@ export default function TodayView() {
       setEvents('')
       setSarcasmLv(0)
       setGameLv(0)
-      genCount.current = 0
     }
     setData(null)
     setError('')

@@ -141,7 +141,7 @@ export default function SettingsView() {
           <input
             type="range"
             min={0}
-            max={1}
+            max={2}
             step={0.05}
             value={temperature}
             onChange={(e) => setTemperature(Number(e.target.value))}
@@ -149,7 +149,8 @@ export default function SettingsView() {
           />
           <div className="mt-0.5 flex justify-between text-[10px] text-slate-600">
             <span>0 · 一本正经</span>
-            <span>1 · 多数模型的上限</span>
+            <span>1 · 常用</span>
+            <span>2 · 放飞</span>
           </div>
         </div>
 

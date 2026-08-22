@@ -1,13 +1,7 @@
 import { forwardRef } from 'react'
+import { SECTION_EN } from './schema'
 import type { PatchData } from './schema'
 import StatBar from './StatBar'
-
-const SECTION_EN: Record<string, string> = {
-  added: "What's New",
-  balance: 'Balance Changes',
-  bugfix: 'Bug Fixes',
-  known_issues: 'Known Issues',
-}
 
 function DeltaChip({ k, v }: { k: string; v: number }) {
   const good = v >= 0

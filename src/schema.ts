@@ -29,11 +29,18 @@ export interface PatchData {
   stats: PatchStats
 }
 
-const SECTION_ZH: Record<SectionType, string> = {
+export const SECTION_ZH: Record<SectionType, string> = {
   added: '新增',
   balance: '平衡性调整',
   bugfix: 'Bug 修复',
   known_issues: '已知问题',
+}
+
+export const SECTION_EN: Record<SectionType, string> = {
+  added: "What's New",
+  balance: 'Balance Changes',
+  bugfix: 'Bug Fixes',
+  known_issues: 'Known Issues',
 }
 
 const SECTION_TYPES = Object.keys(SECTION_ZH) as SectionType[]
@@ -111,7 +118,4 @@ export function parsePatchData(raw: unknown): PatchData | null {
   return { sections, stats }
 }
 
-export function baseVersion(d: Date = new Date()): string {
-  const yy = String(d.getFullYear() % 100).padStart(2, '0')
-  return `v${yy}.${d.getMonth() + 1}.${d.getDate()}`
-}
+export { baseVersion } from './lib/dates'

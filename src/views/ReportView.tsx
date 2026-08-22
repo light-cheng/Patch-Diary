@@ -7,14 +7,7 @@ import { aggregateMonth, type MonthAggregate } from '../lib/monthly'
 import { monthLabel, monthOf, shortMonthVersion, todayLocalDate } from '../lib/dates'
 import { patchToText } from '../lib/text'
 import { copyTextToClipboard, saveCardAsImage } from '../lib/browser'
-import type { PatchData, SectionType } from '../schema'
-
-const SECTION_LABEL: Record<SectionType, string> = {
-  added: '新增',
-  balance: '平衡',
-  bugfix: 'Bug 修复',
-  known_issues: '已知问题',
-}
+import { SECTION_ZH, type PatchData, type SectionType } from '../schema'
 
 export default function ReportView() {
   const [ym, setYm] = useState(monthOf())
@@ -113,7 +106,7 @@ export default function ReportView() {
           <div className="mb-4 grid grid-cols-4 gap-2">
             <MetricChip label="记录天数" value={agg.daysActive} />
             {(Object.keys(agg.counts) as SectionType[]).map((t) => (
-              <MetricChip key={t} label={SECTION_LABEL[t]} value={agg.counts[t]} />
+              <MetricChip key={t} label={SECTION_ZH[t]} value={agg.counts[t]} />
             ))}
           </div>
 
