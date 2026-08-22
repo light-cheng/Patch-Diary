@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-steam-darkest: #0f1216;
+  --color-steam-dark: #171a21;
+  --color-steam-panel: #1b2838;
+  --color-steam-panel2: #16202d;
+  --color-steam-line: #2a475e;
+  --color-steam-green: #a4d007;
+  --color-steam-blue: #66c0f4;
+  --font-sans: -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+
+html,
+body {
+  background: var(--color-steam-darkest);
+  color: #e9e9e9;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.progress-slide {
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
