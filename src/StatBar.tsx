@@ -1,4 +1,5 @@
 import { STAT_KEYS, type PatchStats } from './schema'
+import { useI18n } from './i18n'
 
 const STAT_COLORS: Record<string, string> = {
   ENERGY: '#e0a93e',
@@ -10,11 +11,10 @@ const STAT_COLORS: Record<string, string> = {
 }
 
 export default function StatBar({ stats }: { stats: PatchStats }) {
+  const { t } = useI18n()
   return (
     <div className="mt-6 border-t border-steam-line pt-4">
-      <div className="mb-3 text-[11px] font-bold tracking-widest text-slate-500">
-        USER STATUS / 属性面板
-      </div>
+      <div className="mb-3 text-[11px] font-bold tracking-widest text-slate-500">{t('statBar.title')}</div>
       <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
         {STAT_KEYS.map((k) => {
           const v = stats[k]

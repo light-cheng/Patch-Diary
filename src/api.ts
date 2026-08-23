@@ -48,11 +48,11 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(url, init)
   } catch {
-    throw new ApiError('网络出错了，检查一下服务是否在跑')
+    throw new ApiError('Network error — is the local service running?')
   }
   const body = (await res.json().catch(() => null)) as (T & { ok?: boolean; error?: string }) | null
   if (!res.ok || !body?.ok) {
-    throw new ApiError(body?.error ?? `请求失败（${res.status}）`)
+    throw new ApiError(body?.error ?? `Request failed (${res.status})`)
   }
   return body
 }
@@ -76,7 +76,7 @@ export async function generatePatchNotes(
 ): Promise<PatchData> {
   const body = await post<{ data?: unknown }>('/api/generate', { events, sarcasmLv: levels.sarcasm, gameLv: levels.game })
   const data = parsePatchData(body.data)
-  if (!data) throw new ApiError('生成结果解析失败，点「再试一次」')
+  if (!data) throw new ApiError('Failed to parse result — please try again')
   return data
 }
 
@@ -140,7 +140,7 @@ export async function testConnection(): Promise<TestResult> {
   try {
     return await post<TestResult>('/api/settings/test', {})
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : '连接失败' }
+    return { ok: false, error: e instanceof Error ? e.message : 'Connection failed' }
   }
 }
 
@@ -150,6 +150,6 @@ export async function generateReport(
 ): Promise<PatchData> {
   const body = await post<{ data?: unknown }>('/api/report', { digest, aggregate })
   const data = parsePatchData(body.data)
-  if (!data) throw new ApiError('月报解析失败，再试一次')
+  if (!data) throw new ApiError('Failed to parse report — please try again')
   return data
 }

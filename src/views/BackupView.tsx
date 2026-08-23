@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import { exportAll, importEntries } from '../api'
 import { downloadJson } from '../lib/browser'
+import { useI18n } from '../i18n'
 
 export default function BackupView() {
+  const { t } = useI18n()
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -15,9 +17,9 @@ export default function BackupView() {
       const data = await exportAll()
       const today = new Date().toISOString().slice(0, 10)
       downloadJson(data, `life-diary-backup-${today}.json`)
-      setMessage(`已导出 ${data.entries.length} 天的记录`)
+      setMessage(t('backup.exported', { count: data.entries.length }))
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : '导出失败')
+      setMessage(e instanceof Error ? e.message : t('backup.exportFailed'))
     } finally {
       setBusy(false)
     }
@@ -30,15 +32,15 @@ export default function BackupView() {
     try {
       const parsed = JSON.parse(await file.text()) as { entries?: unknown[] }
       if (!parsed || !Array.isArray(parsed.entries)) {
-        throw new Error('文件格式不对：缺少 entries 数组')
+        throw new Error(t('backup.invalidFile'))
       }
-      if (!window.confirm(`将导入 ${parsed.entries.length} 条记录，相同日期会被覆盖。继续？`)) {
+      if (!window.confirm(t('backup.importConfirm', { count: parsed.entries.length }))) {
         return
       }
       const r = await importEntries(parsed.entries)
-      setMessage(`导入完成：成功 ${r.imported} 条，跳过 ${r.skipped} 条（日期或内容非法）`)
+      setMessage(t('backup.importDone', { imported: r.imported, skipped: r.skipped }))
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : '导入失败')
+      setMessage(e instanceof Error ? e.message : t('backup.importFailed'))
     } finally {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -47,10 +49,8 @@ export default function BackupView() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
-      <h2 className="mb-2 text-xl font-bold text-white">备份与恢复</h2>
-      <p className="mb-6 text-xs text-slate-500">
-        数据库是本机的 SQLite 文件（.wrangler/state/ 下），这个 JSON 是跨机器迁移用的保险。
-      </p>
+      <h2 className="mb-2 text-xl font-bold text-white">{t('backup.title')}</h2>
+      <p className="mb-6 text-xs text-slate-500">{t('backup.desc')}</p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <button
@@ -58,14 +58,14 @@ export default function BackupView() {
           disabled={busy}
           className="rounded bg-steam-green py-3 font-bold text-steam-dark transition hover:brightness-110 disabled:opacity-40"
         >
-          导出全部 JSON
+          {t('backup.export')}
         </button>
         <button
           onClick={() => fileRef.current?.click()}
           disabled={busy}
           className="rounded border border-slate-600 py-3 font-bold text-slate-300 transition hover:bg-white/5 disabled:opacity-40"
         >
-          导入 JSON 文件
+          {t('backup.import')}
         </button>
       </div>
       <input
@@ -79,7 +79,7 @@ export default function BackupView() {
         }}
       />
 
-      {busy && <div className="mt-4 text-sm text-slate-500">处理中…</div>}
+      {busy && <div className="mt-4 text-sm text-slate-500">{t('backup.processing')}</div>}
       {!busy && message && <div className="mt-4 text-sm text-steam-green">{message}</div>}
     </div>
   )

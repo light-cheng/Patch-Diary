@@ -6,22 +6,17 @@ import SplitText from '../components/reactbits/SplitText/SplitText'
 import SpotlightCard from '../components/reactbits/SpotlightCard/SpotlightCard'
 import PatchCard from '../PatchCard'
 import { ApiError, fetchEntry, generatePatchNotes, saveEntry } from '../api'
-import { type PatchData } from '../schema'
+import type { PatchData } from '../schema'
 import { patchToText } from '../lib/text'
 import { baseVersion, nextVersion, todayDateStr, todayLocalDate } from '../lib/dates'
 import { copyTextToClipboard, saveCardAsImage } from '../lib/browser'
+import { useI18n } from '../i18n'
 
 const DRAFT_KEY = 'lpn_draft'
 
-const LOADING_LINES = [
-  '正在编译更新日志…',
-  '正在重新平衡人生数值…',
-  '正在回滚昨天的 bug…',
-  '正在生成本次更新的借口…',
-  '正在与服务器同步你的崩溃…',
-]
-
 export default function TodayView() {
+  const { t, tArray, locale } = useI18n()
+  const LOADING_LINES = tArray('today.loadingLines')
   const [events, setEvents] = useState(() => localStorage.getItem(DRAFT_KEY) ?? '')
   const [phase, setPhase] = useState<'input' | 'loading' | 'card'>('input')
   const [data, setData] = useState<PatchData | null>(null)
@@ -30,9 +25,10 @@ export default function TodayView() {
   const [busy, setBusy] = useState(false)
   const [sarcasmLv, setSarcasmLv] = useState(0)
   const [gameLv, setGameLv] = useState(0)
-  const [loadingLine, setLoadingLine] = useState(LOADING_LINES[0])
+  const [loadingLine, setLoadingLine] = useState(LOADING_LINES[0] ?? '')
   const [copied, setCopied] = useState(false)
   const [saveTip, setSaveTip] = useState('')
+  const [saveTipOk, setSaveTipOk] = useState(true)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const eventsRef = useRef(events)
@@ -41,6 +37,10 @@ export default function TodayView() {
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, events)
   }, [events])
+
+  useEffect(() => {
+    if (LOADING_LINES.length > 0) setLoadingLine(LOADING_LINES[0])
+  }, [locale])
 
   // Hydrate version from already-saved entry so refresh doesn't reset suffix
   useEffect(() => {
@@ -58,13 +58,20 @@ export default function TodayView() {
   useEffect(() => {
     if (phase !== 'loading') return
     let i = 0
-    setLoadingLine(LOADING_LINES[0])
+    setLoadingLine(LOADING_LINES[0] ?? '')
     const t = setInterval(() => {
       i = (i + 1) % LOADING_LINES.length
       setLoadingLine(LOADING_LINES[i])
     }, 2200)
     return () => clearInterval(t)
-  }, [phase])
+  }, [phase, LOADING_LINES])
+
+  const formatToday = useCallback(() => {
+    if (locale === 'en') {
+      return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    }
+    return todayDateStr()
+  }, [locale])
 
   const doGenerate = useCallback(
     async (sarLv: number, gmLv: number) => {
@@ -86,19 +93,21 @@ export default function TodayView() {
         window.scrollTo({ top: 0 })
         try {
           await saveEntry(todayLocalDate(), text, d, v)
-          setSaveTip('已存入日记 ✓')
+          setSaveTip(t('today.saved'))
+          setSaveTipOk(true)
         } catch (e) {
-          setSaveTip(`自动存档失败：${e instanceof ApiError ? e.message : '未知错误'}`)
+          setSaveTip(t('today.autoSaveFailed', { msg: e instanceof ApiError ? e.message : 'unknown' }))
+          setSaveTipOk(false)
         }
         setTimeout(() => setSaveTip(''), 3000)
       } catch (e) {
-        setError(e instanceof Error ? e.message : '出错了，再试一次')
+        setError(e instanceof Error ? e.message : t('today.errorGeneric'))
         setPhase('input')
       } finally {
         setBusy(false)
       }
     },
-    [busy],
+    [busy, t],
   )
 
   async function onSaveImage() {
@@ -107,7 +116,7 @@ export default function TodayView() {
     try {
       await saveCardAsImage(cardRef.current, `Life-${version}-patch-notes.png`)
     } catch {
-      setError('截图失败了…长按卡片手动截也行')
+      setError(t('common.screenshotFailedLong'))
     } finally {
       setBusy(false)
     }
@@ -115,7 +124,7 @@ export default function TodayView() {
 
   async function onCopyText() {
     if (!data || busy) return
-    await copyTextToClipboard(patchToText(data, version, todayDateStr()))
+    await copyTextToClipboard(patchToText(data, version, formatToday()))
     setCopied(true)
     setTimeout(() => setCopied(false), 1600)
   }
@@ -152,14 +161,12 @@ export default function TodayView() {
             className="rounded-xl border border-white/5 bg-black/20 p-2 shadow-2xl"
             spotlightColor="rgba(102, 192, 244, 0.15)"
           >
-            <PatchCard ref={cardRef} data={data} version={version} dateStr={todayDateStr()} />
+            <PatchCard ref={cardRef} data={data} version={version} dateStr={formatToday()} />
           </SpotlightCard>
         </div>
 
         {saveTip && (
-          <div className={`mt-3 text-xs ${saveTip.includes('失败') ? 'text-red-400' : 'text-steam-green'}`}>
-            {saveTip}
-          </div>
+          <div className={`mt-3 text-xs ${saveTipOk ? 'text-steam-green' : 'text-red-400'}`}>{saveTip}</div>
         )}
 
         <div className="mt-5 grid w-full max-w-xl grid-cols-2 gap-2 sm:grid-cols-4">
@@ -172,7 +179,8 @@ export default function TodayView() {
             disabled={busy}
             className="rounded border border-red-500/60 bg-red-500/10 px-2 py-2.5 text-sm font-bold text-red-300 transition hover:bg-red-500/20 disabled:opacity-40"
           >
-            更毒舌{lvSuffix(sarcasmLv)}
+            {t('today.moreSavage')}
+            {lvSuffix(sarcasmLv)}
           </button>
           <button
             onClick={() => {
@@ -183,21 +191,22 @@ export default function TodayView() {
             disabled={busy}
             className="rounded border border-steam-blue/60 bg-steam-blue/10 px-2 py-2.5 text-sm font-bold text-steam-blue transition hover:bg-steam-blue/20 disabled:opacity-40"
           >
-            更像游戏{lvSuffix(gameLv)}
+            {t('today.moreGame')}
+            {lvSuffix(gameLv)}
           </button>
           <button
             onClick={onSaveImage}
             disabled={busy}
             className="rounded bg-steam-green px-2 py-2.5 text-sm font-bold text-steam-dark transition hover:brightness-110 disabled:opacity-40"
           >
-            {busy ? '截图生成中…' : '保存图片'}
+            {busy ? t('common.capturing') : t('today.saveImage')}
           </button>
           <button
             onClick={onCopyText}
             disabled={busy}
             className="rounded border border-slate-600 bg-transparent px-2 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-white/5 disabled:opacity-40"
           >
-            {copied ? '已复制 ✓' : '复制文本'}
+            {copied ? t('common.copied') : t('common.copyText')}
           </button>
         </div>
 
@@ -205,10 +214,10 @@ export default function TodayView() {
 
         <div className="mt-4 flex gap-6 text-xs text-slate-500">
           <button onClick={() => backToInput(false)} className="hover:text-slate-300">
-            ← 改一改今天的输入
+            {t('today.editInput')}
           </button>
           <button onClick={() => backToInput(true)} className="hover:text-slate-300">
-            新的一天 →
+            {t('today.newDay')}
           </button>
         </div>
       </div>
@@ -235,26 +244,24 @@ export default function TodayView() {
         >
           DAILY LIFE · PATCH NOTES
         </GradientText>
-        <p className="mt-2 text-sm text-slate-400">
-          把你今天发生的事，写成一份游戏版本更新公告。生成后自动存入本地日记。
-        </p>
+        <p className="mt-2 text-sm text-slate-400">{t('today.subtitle')}</p>
       </div>
       <textarea
         value={events}
         onChange={(e) => setEvents(e.target.value)}
         rows={7}
-        placeholder={'剪头发了\n下午喝了两杯咖啡\n和朋友吵了一架\n晚上跑了 5 公里'}
+        placeholder={t('today.placeholder')}
         className="w-full resize-y rounded-lg border border-white/10 bg-steam-panel/80 p-4 leading-relaxed text-slate-200 outline-none backdrop-blur placeholder:text-slate-600 focus:border-steam-blue"
       />
       <div className="mt-4 flex items-center justify-between gap-4">
-        <span className="text-xs text-slate-600">草稿自动保存在本机</span>
+        <span className="text-xs text-slate-600">{t('today.draftHint')}</span>
         <ClickSpark sparkColor="#a4d007">
           <button
             onClick={() => doGenerate(sarcasmLv, gameLv)}
             disabled={busy || events.trim().length < 2}
             className="rounded bg-steam-green px-6 py-3 font-bold text-steam-dark transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Generate Patch Notes
+            {t('today.generate')}
           </button>
         </ClickSpark>
       </div>

@@ -1,6 +1,8 @@
-# Life Patch Diary — 人生版本更新公告
+# Life Patch Diary — Turn Your Day into Patch Notes
 
-> 把每天随手写的几句话，变成一份 Steam 风格的版本更新公告。**本地私人日记版** — 无账号、无服务器、数据只在你电脑里，联网仅在「生成」那一刻调用 LLM。
+> [中文](README.zh-CN.md) | English
+
+> Turn your daily scribbles into Steam-style patch notes. **Local, private, offline-first** — no accounts, no servers, data lives only on your machine. It goes online only at the moment you hit “Generate” to call the LLM.
 
 [![Vite](https://img.shields.io/badge/Vite-7.x-646CFF?logo=vite)](https://vitejs.dev)
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react)](https://react.dev)
@@ -12,105 +14,110 @@
 
 ## ✨ Preview
 
-| 今日 · 输入与生成 | 生成结果 · Patch Notes 卡 |
+| Today · Input & Generate | Result · Patch Notes Card |
 |---|---|
 | ![Main Interface](Assets/Main%20Interface.png) | ![Result Demo](Assets/Result%20Demo.png) |
 
-> 左：今日页输入草稿 + 一键生成；右：Steam 风更新公告卡，支持毒舌/游戏黑话叠层重 roll、截图与文本复制。
+> Left: Today — draft input + one-click generate. Right: Steam-style patch notes card with stackable “More savage / More game-ish” re-rolls, screenshot & copy.
 
 ---
 
 ## Features
 
-- **今日** — 写 3–10 句日常 → 生成 Steam 风卡片，`[更毒舌] / [更像游戏]` 可叠层重 roll，生成后自动按天存档
-- **历史** — 按月分组、倒序浏览，点开看原卡，支持截图/复制/删除
-- **月报** — 选月份自动聚合（活跃天数 · Section 计数 · 六维月均 · 高频 Buff/Nerf），一键生成 `Major Release` 大卡
-- **备份** — JSON 导出/导入跨机迁移，同日期覆盖、导入前二次确认
-- **设置** — OpenAI 兼容（OpenRouter / DashScope / DeepSeek / Moonshot）Base URL / Key / 模型 / 温度 0–2 / 推理开关 / 额外参数 + 测试连接
+- **Today** — Write 3–10 lines about your day → Steam-style card. Stackable `[More savage] / [More game-ish]` re-rolls; auto-saved per day
+- **History** — Grouped by month, newest first. Open any day to view the original card, screenshot / copy / delete
+- **Reports** — Pick a month → auto-aggregate (active days · section counts · 6-stat avg · top Buff/Nerf) → generate `Major Release`
+- **Backup** — Export / import full JSON for cross-device migration. Same date overwrites, confirmation before import
+- **Settings** — OpenAI-compatible (OpenRouter / DashScope / DeepSeek / Moonshot) Base URL / Key / Model / Temperature 0–2 / Reasoning toggle / Extra params + connection test
+- **i18n** — Full bilingual UI (EN / 中文), default `EN`, toggle in header or Settings. Preference persisted to `localStorage:lpn_lang`
 
-细节：同天只保留一条，版本号 `vYY.M.D[.N]` 自动递增；草稿 `localStorage:lpn_draft` 自动保存；卡内零动效确保截图稳定。
+Details: one entry per day, version `vYY.M.D[.N]` auto-increments; draft `localStorage:lpn_draft` auto-saved; zero animation inside the card for stable screenshots.
 
 ## Quick Start
 
-**环境** Node.js ≥ 20
+**Requirements** Node.js ≥ 20
 
 ```bash
-# 1. 安装依赖（国内可加 --registry=https://registry.npmmirror.com）
+# 1. Install (China mirror if needed --registry=https://registry.npmmirror.com)
 npm install
-# 若提示 install scripts 被拦截
+# if install scripts are blocked
 npm install-scripts approve esbuild workerd && npm rebuild esbuild workerd
 
-# 2. 初始化本地数据库（仅需一次）
+# 2. Init local DB (once)
 npx wrangler d1 execute DB --local --file schema.sql
 
-# 3. 构建 + 启动
+# 3. Build + start
 npm run build
 npm run dev:full   # wrangler dev :8787
 ```
 
-打开 **http://localhost:8787**，首次到「设置」页配置 API Key 后即可使用。
+Open **http://localhost:8787**, then go to **Settings** to configure your API Key.
 
-> 热更新开发：另开终端 `npm run dev`（Vite :5173 已代理 `/api` → 8787）
+> HMR dev: in another terminal `npm run dev` (Vite :5173 proxies `/api` → 8787)
 
 ## Configuration
 
-**Key 只由你本人写入**，二选一：
+**You own the key.** Two ways:
 
-- **推荐**：设置页粘贴 Key → 保存 → 测试连接绿灯。Key 存本机 D1，页面仅显示打码版 `sk-or-v1…1042`
-- 手动：根目录 `.dev.vars` 写 `OPENROUTER_KEY=sk-xxxx`（已在 `.gitignore`）
+- **Recommended**: Settings → paste Key → Save → Test connection (green). Key is stored in local D1, UI only shows masked `sk-or-v1…1042`
+- Manual: write `OPENROUTER_KEY=sk-xxxx` in `.dev.vars` at repo root (already in `.gitignore`)
 
-默认 `OpenRouter · stealth/ox-alpha`（免费）。换服务商只需改设置页 Base URL / 模型 / Key，无需改代码。
+Default: `OpenRouter · stealth/ox-alpha` (free). To switch provider just change Base URL / Model / Key in Settings — no code change needed.
 
 ## Pages at a Glance
 
-| 页面 | 作用 |
+| Page | What it does |
 |---|---|
-| 今日 | 输入今日事件 → 生成卡片，毒舌/游戏叠层，重 roll 覆盖当天 |
-| 历史 | 按月分组，查看原卡、截图、复制、删除 |
-| 月报 | 选月聚合 + 生成 Major Release |
-| 备份 | 全量 JSON 导出/导入 |
-| 设置 | 兼容 OpenAI 的全部连接配置 + 连通性测试 |
+| Today | Input today’s events → generate card, stack savage/game-ish, re-roll overwrites the day |
+| History | By month, view original card, screenshot, copy, delete |
+| Reports | Aggregate by month + generate Major Release |
+| Backup | Full JSON export / import |
+| Settings | All OpenAI-compatible settings + language + connectivity test |
+
+## Language
+
+Default `EN`. Toggle via the `EN / 中文` button in the top nav or **Settings → Language**. Stored in `localStorage`. Patch content language follows the model’s output (prompts are bilingual-ready).
 
 ## Data & Migration
 
-- 本地库：`.wrangler/state/v3/d1/.../db.sqlite`（SQLite，重启不丢）
-- 换机迁移：
-  - 方式一：备份页导出 JSON → 新机导入
-  - 方式二：直接拷贝 `.wrangler/state` 到新机同路径
-- 草稿：`localStorage:lpn_draft` 与库无关
+- Local DB: `.wrangler/state/v3/d1/.../db.sqlite` (SQLite, survives restarts)
+- Migrate to another machine:
+  - Option 1: Backup → Export JSON → Import on new machine
+  - Option 2: Copy the whole `.wrangler/state` folder to the same path on the new machine
+- Draft: `localStorage:lpn_draft` (separate from DB)
 
-## Security — 红线
+## Security — Red Line
 
-**永远不要 `wrangler deploy` 或以任何形式把本项目暴露到公网：**
+**Never `wrangler deploy` or expose this project to the public internet:**
 
-- 无任何鉴权，公网任何人可烧你的 API Key
-- Key 明文存本地 D1，仅在 `localhost` 前提下安全
+- No auth — anyone on the internet could burn your API Key
+- Key is stored plaintext in local D1, safe only on `localhost`
 
-`package.json` 已移除 deploy 脚本，CI 也不得添加；`/.dev.vars` 已在 `.gitignore`，本地泄露请立即轮换 Key。
+`package.json` has no deploy script on purpose; do not add one in CI. `/.dev.vars` is in `.gitignore` — rotate immediately if leaked.
 
 ## Tech Stack
 
-Vite · React 19 · TypeScript 5 · Tailwind 4 · React Bits（FaultyTerminal / SplitText / ClickSpark / ShinyText / SpotlightCard / CountUp）· Cloudflare Worker（仅本地运行时）· D1 SQLite · `html2canvas-pro`
+Vite · React 19 · TypeScript 5 · Tailwind 4 · React Bits (FaultyTerminal / SplitText / ClickSpark / ShinyText / SpotlightCard / CountUp) · Cloudflare Worker (local runtime only) · D1 SQLite · `html2canvas-pro` · Custom i18n (EN/zh persisted)
 
 ```bash
-npm test        # vitest 单测（schema / monthly / text / dates / worker-lib）
+npm test        # vitest (schema / monthly / text / dates / worker-lib)
 npm run build   # tsc --noEmit + vite build
 ```
 
 ## FAQ
 
-- **生成慢/失败**：ox-alpha 为推理模型，10–30s 正常；失败点「再试一次」；温度相关 400 已自动降级重试（先去 temperature 再去 json_mode）
-- **端口占用**：`npx wrangler dev --port 其他端口` 并同步改 `vite.config.ts` 代理目标
-- **想在手机/局域网用**：默认仅 localhost 是有意的；确需请自担风险 `npx wrangler dev --ip 0.0.0.0`（无口令）
-- **wrangler 卡住不退出**：本机怪癖，命令已成功，`Ctrl+C` 即可
+- **Slow / failed generation**: ox-alpha is a reasoning model, 10–30s is normal. Hit retry on failure. Temperature-related 400s are auto-retried (strip temperature → strip json_mode)
+- **Port in use**: `npx wrangler dev --port <other>` and update `vite.config.ts` proxy target
+- **Use on phone / LAN**: Only localhost is intentional. To open to LAN at your own risk: `npx wrangler dev --ip 0.0.0.0` (no auth)
+- **wrangler hangs and won’t exit**: Known local quirk — the command already succeeded, just `Ctrl+C`
 
 ## Contributing
 
-欢迎提 Issue / PR。请先阅读 `AGENTS.md`（协作入口、目录与测试约定、分支与提交规范）。
+Issues / PRs welcome. Please read `AGENTS.md` first (agent skills entry, directory & testing conventions, branch & commit spec).
 
 ## License
 
-MIT — 详见 [LICENSE](LICENSE)（若未提供，默认 MIT）。
+MIT — see [LICENSE](LICENSE).
 
 ---
 
